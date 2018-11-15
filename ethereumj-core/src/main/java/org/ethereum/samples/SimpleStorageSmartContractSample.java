@@ -37,27 +37,6 @@ import java.math.BigInteger;
  * Created by Anton Nashatyrev on 04.04.2016.
  */
 public class SimpleStorageSmartContractSample {
-    // Pretty simple (and probably the most expensive) Calculator
-//    private static final String contractSrc =
-//            "contract Calculator {" +
-//            "  int public result;" +  // public field can be accessed by calling 'result' function
-//            "  function add(int num) {" +
-//            "    result = result + num;" +
-//            "  }" +
-//            "  function sub(int num) {" +
-//            "    result = result - num;" +
-//            "  }" +
-//            "  function mul(int num) {" +
-//            "    result = result * num;" +
-//            "  }" +
-//            "  function div(int num) {" +
-//            "    result = result / num;" +
-//            "  }" +
-//            "  function clear() {" +
-//            "    result = 0;" +
-//            "  }" +
-//            "}";
-
     private static final String simpleStorageContractSrc =
             "contract SimpleStorage {" +
             "    uint public storedData;" +
@@ -135,25 +114,27 @@ public class SimpleStorageSmartContractSample {
             throw new RuntimeException("Assertion failed: " + n1 + " != " + n2);
         }
     }
+
+    class Account {
+        private String phrase;
+        private byte[] senderPrivateKey;
+        private ECKey eckey;
+
+        public Account(String phrase) {
+            this.phrase = phrase;
+            this.senderPrivateKey = HashUtil.sha3(this.phrase.getBytes());
+            this.eckey = ECKey.fromPrivate(this.senderPrivateKey);
+        }
+
+        public ECKey getEckey() {
+            return eckey;
+        }
+
+        public byte[] getSenderPrivateKey() {
+            return senderPrivateKey;
+        }
+    }
 }
 
-class Account {
-    private String phrase;
-    private byte[] senderPrivateKey;
-    private ECKey eckey;
 
-    public Account(String phrase) {
-        this.phrase = phrase;
-        this.senderPrivateKey = HashUtil.sha3(this.phrase.getBytes());
-        this.eckey = ECKey.fromPrivate(this.senderPrivateKey);
-    }
-
-    public ECKey getEckey() {
-        return eckey;
-    }
-
-    public byte[] getSenderPrivateKey() {
-        return senderPrivateKey;
-    }
-}
 
