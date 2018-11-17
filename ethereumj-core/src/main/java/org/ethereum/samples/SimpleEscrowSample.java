@@ -17,8 +17,10 @@
  */
 package org.ethereum.samples;
 
+import org.ethereum.core.BlockSummary;
 import org.ethereum.crypto.ECKey;
 import org.ethereum.crypto.HashUtil;
+import org.ethereum.listener.EthereumListenerAdapter;
 import org.ethereum.util.ByteUtil;
 import org.ethereum.util.blockchain.SolidityCallResult;
 import org.ethereum.util.blockchain.SolidityContract;
@@ -152,6 +154,16 @@ public class SimpleEscrowSample {
         // warning up the block miner just to understand how long
         // the initial miner dataset is generated
         bc.createBlock();
+
+        bc.addEthereumListener(new EthereumListenerAdapter() {
+            @Override
+            public void onBlock(BlockSummary blockSummary, boolean best) {
+                blockSummary.getReceipts().forEach(receipt -> receipt.getLogInfoList().
+                        forEach(logInfo -> {
+                            System.out.println("LogInfo: " + logInfo);
+                        }));
+            }
+        });
 
         System.out.println("Creating accounts: seller, customer");
 
