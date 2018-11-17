@@ -116,29 +116,28 @@ public class SimpleDaoSample {
             }
         });
 
-        System.out.println("Creating accounts: ownder, user1, user2, user3");
+        System.out.println("Creating accounts: ownder, user1, user2, user3, hacker");
 
+        BigInteger thousandWei = new BigInteger("1000");
+        BigInteger eitherToWei = thousandWei.multiply(thousandWei).multiply(thousandWei)
+                                    .multiply(thousandWei).multiply(thousandWei).multiply(thousandWei);
         //@@ account{balance:10ether} owner;
         Account owner = new Account("account owner");
-        bc.sendEther(owner.getEckey().getAddress(), new BigInteger("500000000000000000"));
+        bc.sendEther(owner.getEckey().getAddress(), new BigInteger("50").multiply(eitherToWei));
 
 
         //@@ account{balance:50ether} user1, user2, user3;
         Account user1 = new Account("account user1");
-        bc.sendEther(user1.getEckey().getAddress(), new BigInteger("500000000000000000"));
+        bc.sendEther(user1.getEckey().getAddress(), new BigInteger("50").multiply(eitherToWei));
 
         Account user2 = new Account("account user2");
-        bc.sendEther(user2.getEckey().getAddress(), new BigInteger("500000000000000000"));
+        bc.sendEther(user2.getEckey().getAddress(), new BigInteger("50").multiply(eitherToWei));
 
         Account user3 = new Account("account user3");
-        bc.sendEther(user3.getEckey().getAddress(), new BigInteger("500000000000000000"));
+        bc.sendEther(user3.getEckey().getAddress(), new BigInteger("50").multiply(eitherToWei));
 
         Account hacker = new Account("account hacker");
-        bc.sendEther(hacker.getEckey().getAddress(), new BigInteger("500000000000000000"));
-
-        //@@ account{smart contract : dao.sol, by: owner, balance: 0eth} dao;
-//        Account dao = new Account("account dao");
-//        bc.sendEther(dao.getEckey().getAddress(), new BigInteger("500000000000000000"));
+        bc.sendEther(hacker.getEckey().getAddress(), new BigInteger("50").multiply(eitherToWei));
 
         System.out.println("Creating a contract: SimpleDAO");
         // This compiles our Solidity contract, submits it to the blockchain
@@ -154,20 +153,26 @@ public class SimpleDaoSample {
         //@@ sendTransaction(dao, donate, user1, {from:user1, gas:3000000, value:1ether});
 
         bc.setSender(user1.getEckey());
-        SolidityCallResult result_donate1 = daoContract.callFunction("donate", 1);
+        SolidityCallResult result_donate1 = daoContract.callFunction(
+                new BigInteger("1").multiply(eitherToWei).longValue(),
+                "donate", user1.getEckey().getAddress());
         System.out.println(result_donate1);
 
 
         //@@ sendTransaction(dao, donate, user2, {from:user2, gas:3000000, value:5ether});
 
         bc.setSender(user2.getEckey());
-        SolidityCallResult result_donate2 = daoContract.callFunction("donate", 5);
+        SolidityCallResult result_donate2 = daoContract.callFunction(
+                new BigInteger("1").multiply(eitherToWei).longValue(),
+                "donate", user2.getEckey().getAddress());
         System.out.println(result_donate2);
 
         //@@ sendTransaction(dao, donate, user3, {account:user2, gaslimit:3000000, value:10ether});
 
         bc.setSender(user3.getEckey());
-        SolidityCallResult result_donate3 = daoContract.callFunction("donate", 10);
+        SolidityCallResult result_donate3 = daoContract.callFunction(
+                new BigInteger("1").multiply(eitherToWei).longValue(),
+                "donate", user3.getEckey().getAddress());
         System.out.println(result_donate3);
 
         BigInteger user1_bi = bc.getBlockchain().getRepository().getBalance(user1.getEckey().getAddress());
@@ -178,30 +183,28 @@ public class SimpleDaoSample {
         System.out.println("user2 balance: " + user2_bi);
         System.out.println("user3 balance: " + user3_bi);
 
-        System.out.println("Creating accounts: hacker");
-
-        //@@ account{balance: 1ether} hacker;
-//        Account hacker = new Account("account hacker");
-//        bc.sendEther(hacker.getEckey().getAddress(), new BigInteger("250000000000000000"));
-
-        System.out.println("The hacker donates 1ether to the dao.");
-
-        bc.setSender(hacker.getEckey());
-        SolidityCallResult result_donate_hacker = daoContract.callFunction("donate", 1);
-        System.out.println(result_donate_hacker);
-
-        BigInteger hacker_bi = bc.getBlockchain().getRepository().getBalance(hacker.getEckey().getAddress());
-        System.out.println("hacker balance: " + hacker_bi);
-
+        //@@ account{smart contract : mallory.sol, by: hacker, balance: 0eth} malory(dao);
         System.out.println("Creating a contract: Mallory");
 
-        //@@ account{smart contract : mallory.sol, by: hacker, balance: 0eth} malory(dao);
         bc.setSender(hacker.getEckey());
         SolidityContract malloryContract =
                 bc.submitNewContract(contractSrc, "Mallory",
                         new Object[] { ByteUtil.bytesToBigInteger(daoContract.getAddress()) });
 
+        System.out.println("The hacker donates 1ether to the dao.");
+
         //@@ sendTransaction(dao, donate, mallory, {from:hacker, gas:3000000, value:1ether});
+        bc.setSender(hacker.getEckey());
+        SolidityCallResult result_donate_hacker = daoContract.callFunction(
+                new BigInteger("1").multiply(eitherToWei).divide(new BigInteger("10")).longValue(),
+                "donate", malloryContract.getAddress());
+        System.out.println(result_donate_hacker);
+
+        BigInteger hacker_bi = bc.getBlockchain().getRepository().getBalance(hacker.getEckey().getAddress());
+        System.out.println("hacker balance: " + hacker_bi);
+
+        BigInteger dao_bi = bc.getBlockchain().getRepository().getBalance(daoContract.getAddress());
+        System.out.println("Dao balance: " + dao_bi);
 
         System.out.println("The hacker calls the fallback function of the mallory contract.");
 
@@ -236,6 +239,9 @@ public class SimpleDaoSample {
         assert(bi.compareTo(new BigInteger("1")) == 1);
 
         System.out.println("The hacker has now gotten: " + bi);
+
+        dao_bi = bc.getBlockchain().getRepository().getBalance(daoContract.getAddress());
+        System.out.println("Dao balance: " + dao_bi);
 
         System.out.println("Done.");
     }
