@@ -83,7 +83,7 @@ public class EthereumScriptInterpreter {
 
         String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es" };
 
-        String scriptFileName = benchmarks[1];
+        String scriptFileName = benchmarks[2];
         System.out.println("Script: " + scriptbase + scriptFileName);
         System.out.println(readFile(scriptbase + scriptFileName));
 

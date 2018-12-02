@@ -2,11 +2,11 @@
 account{balance:10ether} seller;
 account{balance:50ether} customer;
 
-account{contract:"escrow.sol", by:seller} coin("MyCoin");
+account{contract:"escrow.sol", by:seller} coin("MyCoin", 5, "mycoin", "MYC", 1);
 account{contract:"escrow.sol", by:seller} escrow("Escrow", coin, 1, 5);
 
 coin.transfer(escrow,1) {by:seller};
-escrow.start(60minutes) {by:seller};
+escrow.start(1) {by:seller};
 
 escrow.() {by:customer, value:5ether};
 escrow.close() {by:seller};
