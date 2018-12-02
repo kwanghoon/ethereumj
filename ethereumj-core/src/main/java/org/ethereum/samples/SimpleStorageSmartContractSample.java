@@ -27,6 +27,7 @@ import org.ethereum.util.blockchain.SolidityCallResult;
 import org.ethereum.util.blockchain.SolidityContract;
 import org.ethereum.util.blockchain.StandaloneBlockchain;
 
+import java.io.File;
 import java.math.BigInteger;
 
 /**
@@ -53,6 +54,11 @@ public class SimpleStorageSmartContractSample {
     StandaloneBlockchain bc;
 
     public static void main(String[] args) throws Exception {
+        File file = new File(".");
+        System.out.println("The current directory: " + file.getAbsolutePath());
+        System.out.println("The current directory: " + file.getCanonicalPath());
+        System.out.println("The system base directory: " + System.getProperty("user.dir"));
+
         SimpleStorageSmartContractSample main = new SimpleStorageSmartContractSample();
         main.simpleStorageSmartContract(args);
     }
