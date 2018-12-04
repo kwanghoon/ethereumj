@@ -201,7 +201,7 @@ public class SimpleEscrowSample {
         //@@ account{smart contract : escrow.sol, by: seller, balance: 0eth} escrow(coin, 1, 5ether);
         bc.setSender(seller.getEckey());
         SolidityContract  escrowContract = bc.submitNewContract(escrowContractSrc, "Escrow",
-                new Object[] { coinContract.getAddress(), 1, new BigInteger("5")});
+                new Object[] { coinContract.getAddress(), new BigInteger("1"), new BigInteger("5")});
 
         //@@ sendTransaction(coin, transfer, escrow, 1, {from=seller, gas:3000000, value:0ether});
         bc.setSender(seller.getEckey());
@@ -213,7 +213,7 @@ public class SimpleEscrowSample {
 
         //@@ sendTransaction(escrow, start, 60min, {from=seller, gas:3000000, value:0ether});
         bc.setSender(seller.getEckey());
-        SolidityCallResult result_start = escrowContract.callFunction("start", 1);
+        SolidityCallResult result_start = escrowContract.callFunction("start", new BigInteger("1"));
         System.out.println("start: " + result_start);
 
         //@@ sendTransaction(escrow, fallack, {from=customer, gas:3000000, value:5ether});

@@ -373,13 +373,13 @@ public class CommonParserUtil<Token extends TokenInterface<Token>> {
 
 			fileContent += "\tProductionRule \"" + data[0].trim() + "\" [";
 
-			// data[0] �뜝�룞�삕 ProductionRule �뜝�듅源띿삕 �뜝�룞�삕�뜝�떛源띿삕
+			// data[0] �뜝�룞�삕 ProductionRule �뜝�듅源띿�뜝�룞�삕�뜝�떛源띿
 			// data[1] �뜝�룞�삕 �뜝�룞�삕�뜝�룞�삕�뜝�룞�삕�뜝�룞�삕 �뜝�룞�삕�뜝�룞�삕 Nonterminal Terminal �뜝�떎�뙋�삕 �뜝�떗�슱�삕
 			if (data.length > 1 && data[1].trim().length() > 0) {
 				String[] tok = data[1].trim().split("[ \t\n]");
 	
 				for (int j = 0; j < tok.length; j++) {
-					if (nonterminals.contains(tok[j])) { // �뜝�룞�삕�뜝�룞�삕 token�뜝�룞�삕 Nonterminal�뜝�룞�삕 �뜝�룞�삕�뜝占�
+					if (nonterminals.contains(tok[j])) { //
 						fileContent += "Nonterminal \"";
 					}
 					else {
@@ -408,7 +408,7 @@ public class CommonParserUtil<Token extends TokenInterface<Token>> {
 		String directory = System.getProperty("user.dir") + getWorkingdir();
 		String grammarPath = directory + "\\mygrammar.grm";
 		
-		// file �뜝�룞�삕�뜝占�
+		// file
 		try {
 			PrintWriter writer = new PrintWriter(grammarPath);
 			writer.println(fileContent);

@@ -48,6 +48,9 @@ public class EthereumScriptInterpreter {
     static final BigInteger eitherToWei =
             thousandWei.multiply(thousandWei).multiply(thousandWei)
                 .multiply(thousandWei).multiply(thousandWei).multiply(thousandWei);
+    static final BigInteger eitherToFinney =
+            thousandWei.multiply(thousandWei).multiply(thousandWei)
+                    .multiply(thousandWei).multiply(thousandWei);
 
     String scriptbase;
 
@@ -83,7 +86,7 @@ public class EthereumScriptInterpreter {
 
         String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es" };
 
-        String scriptFileName = benchmarks[2];
+        String scriptFileName = benchmarks[1];
         System.out.println("Script: " + scriptbase + scriptFileName);
         System.out.println(readFile(scriptbase + scriptFileName));
 
@@ -184,7 +187,7 @@ public class EthereumScriptInterpreter {
     void evalSendTransactionStmt(HashMap<String,Object> env, HashMap<String, Type>tyenv,
                          org.swlab.lib.parser.examples.etherscript.ast.SendTransaction sendTranStmt) {
         Expr byExpr = sendTranStmt.properties.get("by");
-        Expr balanceExpr = sendTranStmt.properties.get("balance");
+        Expr balanceExpr = sendTranStmt.properties.get("value");
         ArrayList<Expr> argExprs = sendTranStmt.argExprs;
         Object[] argVals = evalExprs(env, tyenv, argExprs);
         Object[] convArgVals;
@@ -198,16 +201,20 @@ public class EthereumScriptInterpreter {
 
             if(balanceExpr == null) {
                 if (argVals == null) {
+                    System.out.println("sendTransactionStmt:(1)");
                     result = contractId.callFunction(sendTranStmt.functionName);
                 } else {
+                    System.out.println("sendTransactionStmt:(2)");
                     convArgVals = toAddress(argVals);
                     result = contractId.callFunction(sendTranStmt.functionName, convArgVals);
                 }
             } else {
                 BigInteger bal = (BigInteger)evalExpr(env, tyenv, balanceExpr);
                 if (argVals == null) {
+                    System.out.println("sendTransactionStmt:(3)");
                     result = contractId.callFunction(bal.longValue(), sendTranStmt.functionName);
                 } else {
+                    System.out.println("sendTransactionStmt:(4)");
                     convArgVals = toAddress(argVals);
                     result = contractId.callFunction(bal.longValue(), sendTranStmt.functionName, convArgVals);
                 }
@@ -299,6 +306,8 @@ public class EthereumScriptInterpreter {
                     return bi.multiply(eitherToWei);
                 case "wei":
                     return bi;
+                case "finney":
+                    return bi.multiply(eitherToFinney);
                 case "seconds":
                     return bi;
                 case "minutes":
