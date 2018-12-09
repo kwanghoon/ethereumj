@@ -405,9 +405,12 @@ public class CommonParserUtil<Token extends TokenInterface<Token>> {
 
 		fileContent += "]";
 
-		String directory = System.getProperty("user.dir") + getWorkingdir();
+		// String directory = System.getProperty("user.dir") + getWorkingdir();
+		String directory = getWorkingdir();
+
 		String grammarPath = directory + "\\mygrammar.grm";
-		
+		System.out.println(grammarPath);
+
 		// file
 		try {
 			PrintWriter writer = new PrintWriter(grammarPath);

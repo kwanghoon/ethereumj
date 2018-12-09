@@ -18,12 +18,16 @@
 package org.ethereum.samples;
 
 import org.ethereum.core.BlockSummary;
+import org.ethereum.core.CallTransaction;
 import org.ethereum.crypto.ECKey;
 import org.ethereum.crypto.HashUtil;
 import org.ethereum.listener.EthereumListenerAdapter;
+import org.ethereum.util.ByteUtil;
 import org.ethereum.util.blockchain.SolidityCallResult;
 import org.ethereum.util.blockchain.SolidityContract;
 import org.ethereum.util.blockchain.StandaloneBlockchain;
+import org.ethereum.util.blockchain.TransactionResult;
+import org.spongycastle.util.encoders.Hex;
 import org.swlab.lib.parser.examples.etherscript.Parser;
 import org.swlab.lib.parser.examples.etherscript.ast.*;
 
@@ -84,16 +88,16 @@ public class EthereumScriptInterpreter {
             }
         });
 
-        String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es" };
+        String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es", "kotET.es" };
 
-        String scriptFileName = benchmarks[1];
+        String scriptFileName = benchmarks[3];
         System.out.println("Script: " + scriptbase + scriptFileName);
         System.out.println(readFile(scriptbase + scriptFileName));
 
         FileReader fr = new FileReader(scriptbase + scriptFileName);
         Parser parser = new Parser();
 
-        parser.setWorkingDir(base + "/out/production/");
+        parser.setWorkingDir(base + "\\..\\out\\production\\");
 
         ArrayList<Stmt> program = (ArrayList<Stmt>)parser.Parsing(fr);
 
