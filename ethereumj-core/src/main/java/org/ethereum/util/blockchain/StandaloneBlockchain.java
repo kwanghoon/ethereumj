@@ -337,13 +337,24 @@ public class StandaloneBlockchain implements LocalBlockchain {
 
     @Override
     public SolidityContract submitNewContract(String soliditySrc, Object... constructorArgs) {
-        return submitNewContract(soliditySrc, null, constructorArgs);
+        return submitNewContract(soliditySrc, (String)null, constructorArgs);
     }
 
     @Override
     public SolidityContract submitNewContract(String soliditySrc, String contractName, Object... constructorArgs) {
         SolidityContractImpl contract = createContract(soliditySrc, contractName);
         return submitNewContract(contract, constructorArgs);
+    }
+
+////    @Override
+    public SolidityContract submitNewContract(String soliditySrc, BigInteger value, Object... constructorArgs) {
+        return submitNewContract(soliditySrc, null, value, constructorArgs);
+    }
+
+////    @Override
+    public SolidityContract submitNewContract(String soliditySrc, String contractName, BigInteger value, Object... constructorArgs) {
+        SolidityContractImpl contract = createContract(soliditySrc, contractName);
+        return submitNewContract(contract, value, constructorArgs);
     }
 
     @Override
@@ -369,16 +380,29 @@ public class StandaloneBlockchain implements LocalBlockchain {
 	}
 
 	private SolidityContract submitNewContract(SolidityContractImpl contract, Object... constructorArgs) {
-		CallTransaction.Function constructor = contract.contract.getConstructor();
-		if (constructor == null && constructorArgs.length > 0) {
-			throw new RuntimeException("No constructor with params found");
-		}
-		byte[] argsEncoded = constructor == null ? new byte[0] : constructor.encodeArguments(constructorArgs);
-		submitNewTx(new PendingTx(new byte[0], BigInteger.ZERO,
-				ByteUtil.merge(Hex.decode(contract.getBinary()), argsEncoded), contract, null,
-				new TransactionResult()));
-		return contract;
+        return submitNewContract(contract, BigInteger.ZERO, constructorArgs);
+//		CallTransaction.Function constructor = contract.contract.getConstructor();
+//		if (constructor == null && constructorArgs.length > 0) {
+//			throw new RuntimeException("No constructor with params found");
+//		}
+//		byte[] argsEncoded = constructor == null ? new byte[0] : constructor.encodeArguments(constructorArgs);
+//		submitNewTx(new PendingTx(new byte[0], BigInteger.ZERO,
+//				ByteUtil.merge(Hex.decode(contract.getBinary()), argsEncoded), contract, null,
+//				new TransactionResult()));
+//		return contract;
 	}
+
+    private SolidityContract submitNewContract(SolidityContractImpl contract, BigInteger value, Object... constructorArgs) {
+        CallTransaction.Function constructor = contract.contract.getConstructor();
+        if (constructor == null && constructorArgs.length > 0) {
+            throw new RuntimeException("No constructor with params found");
+        }
+        byte[] argsEncoded = constructor == null ? new byte[0] : constructor.encodeArguments(constructorArgs);
+        submitNewTx(new PendingTx(new byte[0], value,
+                ByteUtil.merge(Hex.decode(contract.getBinary()), argsEncoded), contract, null,
+                new TransactionResult()));
+        return contract;
+    }
 
     private SolidityContractImpl createContract(String soliditySrc, String contractName) {
         try {

@@ -88,16 +88,17 @@ public class EthereumScriptInterpreter {
             }
         });
 
-        String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es", "kotET.es" };
+        String[] benchmarks = { "simplestorage.es", "dao.es", "escrow.es", "kotET.es", "sendtest.es" };
 
-        String scriptFileName = benchmarks[3];
+        String scriptFileName = benchmarks[4];
         System.out.println("Script: " + scriptbase + scriptFileName);
         System.out.println(readFile(scriptbase + scriptFileName));
 
         FileReader fr = new FileReader(scriptbase + scriptFileName);
         Parser parser = new Parser();
 
-        parser.setWorkingDir(base + "\\..\\out\\production\\");
+//        parser.setWorkingDir(base + "\\..\\out\\production\\");
+        parser.setWorkingDir(base + "\\out\\production\\");
 
         ArrayList<Stmt> program = (ArrayList<Stmt>)parser.Parsing(fr);
 
@@ -135,6 +136,8 @@ public class EthereumScriptInterpreter {
         Expr contractExpr = accStmt.properties.get("contract");
         Expr balanceExpr = accStmt.properties.get("balance");
         Expr byExpr = accStmt.properties.get("by");
+        Expr valueExpr = accStmt.properties.get("value");
+
         ArrayList<Expr> argExprs = accStmt.argExprs;
 
         // Account declaration
@@ -152,6 +155,11 @@ public class EthereumScriptInterpreter {
         // Contract account declaration
         else if (contractExpr != null && byExpr != null && argExprs.size() >= 1) {
             Account byAcc = (Account)evalExpr(env, tyenv, byExpr);
+            BigInteger value;
+
+            if (valueExpr == null) value = null;
+            else value = (BigInteger)evalExpr(env, tyenv, valueExpr);
+
             String solidityFileName = (String)evalExpr(env, tyenv, contractExpr);
             String soliditySrc = readFile(scriptbase + solidityFileName);
 
@@ -168,11 +176,18 @@ public class EthereumScriptInterpreter {
 
             SolidityContract contractId;
             if (argsAvailable == false) {
-                contractId = bc.submitNewContract(soliditySrc, constrName);
+                if (value == null)
+                    contractId = bc.submitNewContract(soliditySrc, constrName);
+                else
+                    contractId = bc.submitNewContract(soliditySrc, constrName, value);
             } else {
                 Object[] argVals = evalExprs(env, tyenv, argExprs);
                 Object[] convArgVals = toAddress(argVals);
-                contractId = bc.submitNewContract(soliditySrc, constrName, convArgVals);
+
+                if (value == null)
+                    contractId = bc.submitNewContract(soliditySrc, constrName, convArgVals);
+                else
+                    contractId = bc.submitNewContract(soliditySrc, constrName, value, convArgVals);
             }
 
             env.put(accStmt.name, contractId);
@@ -191,7 +206,7 @@ public class EthereumScriptInterpreter {
     void evalSendTransactionStmt(HashMap<String,Object> env, HashMap<String, Type>tyenv,
                          org.swlab.lib.parser.examples.etherscript.ast.SendTransaction sendTranStmt) {
         Expr byExpr = sendTranStmt.properties.get("by");
-        Expr balanceExpr = sendTranStmt.properties.get("value");
+        Expr valueExpr = sendTranStmt.properties.get("value");
         ArrayList<Expr> argExprs = sendTranStmt.argExprs;
         Object[] argVals = evalExprs(env, tyenv, argExprs);
         Object[] convArgVals;
@@ -203,7 +218,7 @@ public class EthereumScriptInterpreter {
             SolidityContract contractId = (SolidityContract)env.get(sendTranStmt.contractName);
             SolidityCallResult result;
 
-            if(balanceExpr == null) {
+            if(valueExpr == null) {
                 if (argVals == null) {
                     System.out.println("sendTransactionStmt:(1)");
                     result = contractId.callFunction(sendTranStmt.functionName);
@@ -213,7 +228,7 @@ public class EthereumScriptInterpreter {
                     result = contractId.callFunction(sendTranStmt.functionName, convArgVals);
                 }
             } else {
-                BigInteger bal = (BigInteger)evalExpr(env, tyenv, balanceExpr);
+                BigInteger bal = (BigInteger)evalExpr(env, tyenv, valueExpr);
                 if (argVals == null) {
                     System.out.println("sendTransactionStmt:(3)");
                     result = contractId.callFunction(bal.longValue(), sendTranStmt.functionName);
@@ -345,7 +360,10 @@ public class EthereumScriptInterpreter {
             return bc.getBlockchain().getRepository().getBalance(account.getEckey().getAddress());
         } else if (objVal instanceof SolidityContract) {
             SolidityContract contract = (SolidityContract)objVal;
-            return contract.callConstFunction(fieldexpr.field)[0];
+            if ("balance".equals(fieldexpr.field))
+                return bc.getBlockchain().getRepository().getBalance(contract.getAddress());
+            else
+                return contract.callConstFunction(fieldexpr.field)[0];
         }
         else {
             assert false;
